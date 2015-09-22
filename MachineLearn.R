@@ -1,0 +1,21 @@
+library(caret)
+library(dplyr)
+train<-read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!"))
+myvars<-c("roll_belt","pitch_belt","yaw_belt","total_accel_belt","roll_arm","pitch_arm","yaw_arm","total_accel_arm","roll_dumbbell","pitch_dumbbell","yaw_dumbbell","roll_forearm","pitch_forearm","yaw_forearm","classe")
+PrunedTrain<-train[,myvars]
+  nsv<-nearZeroVar(train)
+  paredTrain<-PrunedTrain[,-nsv]
+inTrain<-createDataPartition(y=paredTrain$classe,p=.7,list=FALSE)
+TrainingSet<-paredTrain[inTrain,]
+TestingSet<-paredTrain[-inTrain,]
+modFit<-train(classe~.,method="rf",data=TrainingSet)
+##Does centering and scaling help?
+preObj<-preProcess(TrainingSet[,-13],method=c("center","scale"))
+csTrain<-predict(preObj,TrainingSet[,-13])
+csTest<-predict(preObj,TestingSet[,-13])
+csTrain<-cbind(TrainingSet$classe,csTrain)
+csTest<-cbind(TestingSet$classe,csTest)
+modFit2<-train(TrainingSet$classe~.,method="rf",data=TrainingSet)
+##No...
+ctrl<-trainControl(method="cv")
+modFit3<-train(classe~.,method="rf",data=TrainingSet,trControl=ctrl)
